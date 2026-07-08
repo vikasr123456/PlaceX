@@ -1,0 +1,90 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: placex_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=place_x
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
+  mongodb:
+    image: mongo:6.0
+    container_name: placex_mongodb
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: placex_redis
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    container_name: placex_web
+    command: /start
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=place_x
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - MONGO_HOST=mongodb
+      - MONGO_PORT=27017
+      - MONGO_DB_NAME=place_x_mongo
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - mongodb
+      - redis
+
+  celery_worker:
+    build: .
+    container_name: placex_celery_worker
+    command: celery -A place_x worker --loglevel=info
+    volumes:
+      - .:/usr/src/app
+    environment:
+      - DEBUG=1
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=place_x
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - MONGO_HOST=mongodb
+      - MONGO_PORT=27017
+      - MONGO_DB_NAME=place_x_mongo
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - db
+      - mongodb
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: placex_frontend
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  mongodb_data:
