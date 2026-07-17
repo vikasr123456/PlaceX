@@ -2,7 +2,7 @@
 
 A comprehensive placement management system built with Django REST Framework, React, PostgreSQL, MongoDB, and Kubernetes. Features intelligent resume parsing, job matching, application tracking, and JWT-based authentication.
 
-## 🚀 Features
+##  Features
 
 - **User Authentication**: JWT-based secure authentication with registration, login, and profile management
 - **Job Management**: Browse, search, and apply to jobs from various companies
@@ -14,7 +14,7 @@ A comprehensive placement management system built with Django REST Framework, Re
 - **Load Balancing**: Nginx-based load balancing for high availability
 - **Kubernetes Deployment**: Production-ready Kubernetes configuration
 
-## 📋 Tech Stack
+##  Tech Stack
 
 ### Backend
 - **Django 3.2**: Web framework with REST API support
@@ -36,7 +36,7 @@ A comprehensive placement management system built with Django REST Framework, Re
 - **Nginx**: Load balancer and reverse proxy
 - **Docker**: Containerization
 
-## 🛠️ Installation
+##  Installation
 
 ### Prerequisites
 - Python 3.8+
@@ -114,7 +114,7 @@ VITE_API_URL=http://localhost:8000/api
 npm run dev
 ```
 
-## 🚀 Running the Application
+##  Running the Application
 
 ### Development Mode
 
@@ -147,7 +147,7 @@ Access the application at:
 - Backend API: http://localhost:8000/api
 - Django Admin: http://localhost:8000/admin
 
-## ☸️ Kubernetes Deployment
+##  Kubernetes Deployment
 
 ### Prerequisites
 - Kubernetes cluster (minikube, kind, or cloud provider)
@@ -209,7 +209,7 @@ kubectl get svc nginx-service
 # Access at http://placex.local
 ```
 
-## 📡 API Endpoints
+##  API Endpoints
 
 ### Authentication
 - `POST /api/auth/register/` - User registration
@@ -249,7 +249,7 @@ kubectl get svc nginx-service
 - `GET /api/job-matches/` - List job matches
 - `POST /api/job-matches/calculate_match/` - Calculate job match
 
-## 🔧 Configuration
+##  Configuration
 
 ### Django Settings
 - `place_x/settings.py` - Main Django configuration
@@ -263,7 +263,7 @@ kubectl get svc nginx-service
 - `frontend/src/context/AuthContext.jsx` - Authentication context
 - `frontend/tailwind.config.js` - Tailwind CSS configuration
 
-## 📝 Environment Variables
+##  Environment Variables
 
 ### Backend
 - `DB_HOST` - PostgreSQL host
@@ -281,7 +281,7 @@ kubectl get svc nginx-service
 ### Frontend
 - `VITE_API_URL` - Backend API URL
 
-## 🧪 Testing
+##  Testing
 
 ### Backend Tests
 ```bash
@@ -294,7 +294,7 @@ cd frontend
 npm test
 ```
 
-## 📚 Additional Documentation
+##  Additional Documentation
 
 - **Tech Stack Overview**: See below for detailed technology stack information
 
@@ -350,7 +350,7 @@ npm test
 - **Purpose**: Load balancer and reverse proxy.
 - **Why it is used**: Nginx distributes incoming traffic across multiple backend instances, ensuring high availability and optimal resource utilization. It also handles SSL termination and serves static content efficiently.
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License.
 
