@@ -1,6 +1,69 @@
-import { Building2, Users, FileText, Calendar, TrendingUp, Plus, ArrowRight, CheckCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Building2, Users, FileText, Calendar, TrendingUp, Plus, ArrowRight, CheckCircle, Check } from 'lucide-react';
+import api from '../api/axios';
 
 const RecruiterDashboard = ({ stats }) => {
+  const [profile, setProfile] = useState(null);
+  const [companies, setCompanies] = useState([]);
+  const [form, setForm] = useState({ name: '', website: '', industry: '', description: '' });
+  const [selectedCompany, setSelectedCompany] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
+  const loadData = async () => {
+    try {
+      const [profileRes, companiesRes] = await Promise.all([
+        api.get('/user-profiles/me/'),
+        api.get('/companies/'),
+      ]);
+      setProfile(profileRes.data);
+      setCompanies(companiesRes.data);
+    } catch (err) {
+      console.error('Error loading company data:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const registerCompany = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    try {
+      const res = await api.post('/companies/', {
+        name: form.name,
+        website: form.website,
+        industry: form.industry,
+        description: form.description,
+      });
+      await api.put('/user-profiles/me/', { company: res.data.id });
+      setForm({ name: '', website: '', industry: '', description: '' });
+      setMessage(`Company "${res.data.name}" registered and linked to your account.`);
+      loadData();
+    } catch (err) {
+      setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to register company.');
+    }
+  };
+
+  const selectCompany = async (e) => {
+    e.preventDefault();
+    setError('');
+    setMessage('');
+    if (!selectedCompany) {
+      setError('Please select a company.');
+      return;
+    }
+    try {
+      await api.put('/user-profiles/me/', { company: selectedCompany });
+      setMessage('Company linked to your account.');
+      loadData();
+    } catch (err) {
+      setError(err.response?.data?.error || err.response?.data?.detail || 'Failed to link company.');
+    }
+  };
+
   return (
     <div className="space-y-8 animate-slide-up-3d">
       <div className="flex items-center justify-between">
@@ -9,7 +72,102 @@ const RecruiterDashboard = ({ stats }) => {
           <p className="text-slate-400 mt-1">Manage your job postings and applications</p>
         </div>
       </div>
-      
+
+      {/* Company Setup */}
+      <div className="card-3d rounded-2xl p-6">
+        <h3 className="text-xl font-semibold mb-4 flex items-center">
+          <Building2 className="h-5 w-5 mr-2 text-accent-blue-400" />
+          <span className="gradient-text">Your Company</span>
+        </h3>
+
+        {profile?.company ? (
+          <div className="flex items-center justify-between p-4 rounded-xl bg-accent-emerald-900/20 border border-accent-emerald-700/50">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-accent-emerald-500/20 flex items-center justify-center">
+                <Building2 className="h-5 w-5 text-accent-emerald-400" />
+              </div>
+              <div>
+                <p className="text-white font-medium">{profile.company_name}</p>
+                <p className="text-slate-400 text-sm">Linked to your recruiter account</p>
+              </div>
+            </div>
+            <span className="flex items-center text-accent-emerald-400 text-sm">
+              <Check className="h-4 w-4 mr-1" /> Linked
+            </span>
+          </div>
+        ) : (
+          <p className="text-slate-400 mb-4">You are not linked to a company yet. Register your company or select an existing one.</p>
+        )}
+
+        {message && <p className="mt-3 text-sm text-accent-emerald-400">{message}</p>}
+        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <form onSubmit={registerCompany} className="space-y-3">
+            <h4 className="font-medium text-white">Register a new company</h4>
+            <input
+              type="text"
+              required
+              placeholder="Company name"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl bg-dark-800/60 border border-dark-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent-blue-500"
+            />
+            <input
+              type="url"
+              placeholder="Website (optional)"
+              value={form.website}
+              onChange={(e) => setForm({ ...form, website: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl bg-dark-800/60 border border-dark-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent-blue-500"
+            />
+            <input
+              type="text"
+              placeholder="Industry (optional)"
+              value={form.industry}
+              onChange={(e) => setForm({ ...form, industry: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl bg-dark-800/60 border border-dark-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent-blue-500"
+            />
+            <textarea
+              placeholder="Description (optional)"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows="2"
+              className="w-full px-4 py-3 rounded-xl bg-dark-800/60 border border-dark-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent-blue-500"
+            />
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-accent-blue-600 to-accent-blue-700 hover:from-accent-blue-500 hover:to-accent-blue-600 rounded-xl py-3 transition-all btn-3d shadow-3d-sm"
+            >
+              <Plus className="h-5 w-5" />
+              <span className="font-medium">Register Company</span>
+            </button>
+          </form>
+
+          <form onSubmit={selectCompany} className="space-y-3">
+            <h4 className="font-medium text-white">Select an existing company</h4>
+            <select
+              value={selectedCompany}
+              onChange={(e) => setSelectedCompany(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-dark-800/60 border border-dark-700 text-white placeholder-slate-500 focus:outline-none focus:border-accent-blue-500"
+            >
+              <option value="">-- Choose a company --</option>
+              {companies
+                .filter((c) => c.id !== profile?.company)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+            </select>
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center space-x-2 bg-dark-800/50 hover:bg-dark-800 border border-dark-700 rounded-xl py-3 transition-all btn-3d"
+            >
+              <CheckCircle className="h-5 w-5 text-accent-emerald-400" />
+              <span className="font-medium">Link to Company</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 stagger-in">
         <div className="card-3d rounded-2xl p-6 card-hover">

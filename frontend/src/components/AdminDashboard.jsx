@@ -15,8 +15,8 @@ const AdminDashboard = ({ stats }) => {
         <div className="card-3d rounded-2xl p-6 card-hover">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-slate-400 text-sm font-medium">Total Users</p>
-              <p className="text-3xl font-bold mt-2 text-white">{stats.totalUsers || 0}</p>
+              <p className="text-slate-400 text-sm font-medium">Students</p>
+              <p className="text-3xl font-bold mt-2 text-white">{stats.totalStudents || 0}</p>
               <p className="text-xs text-accent-emerald-400 mt-1 flex items-center">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 +24 this week

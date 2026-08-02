@@ -19,6 +19,9 @@ class UserProfile(models.Model):
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_profile')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
+    company = models.ForeignKey(
+        'Company', null=True, blank=True, on_delete=models.SET_NULL, related_name='members'
+    )
     resume = models.FileField(upload_to='resumes/', storage=gridfs_storage, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)

@@ -44,16 +44,16 @@ const Dashboard = () => {
           hired: applicationsRes.data.results?.filter(app => app.status === 'accepted').length || 0,
         });
       } else if (role === 'admin') {
-        const [usersRes, companiesRes, jobsRes] = await Promise.all([
-          api.get('/auth/profile/'),
+        const [statsRes, companiesRes, jobsRes] = await Promise.all([
+          api.get('/user-profiles/stats/'),
           api.get('/companies/'),
           api.get('/jobs/'),
         ]);
 
         setStats({
-          totalUsers: 150,
-          companies: companiesRes.data.count || 0,
-          jobPostings: jobsRes.data.count || 0,
+          totalStudents: statsRes.data.totalStudents || 0,
+          companies: Array.isArray(companiesRes.data) ? companiesRes.data.length : (companiesRes.data.count || 0),
+          jobPostings: Array.isArray(jobsRes.data) ? jobsRes.data.length : (jobsRes.data.count || 0),
           activeSessions: 45,
         });
       }

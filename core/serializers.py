@@ -71,14 +71,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
     email = serializers.CharField(source='user.email', read_only=True)
     first_name = serializers.CharField(source='user.first_name', read_only=True)
     last_name = serializers.CharField(source='user.last_name', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
 
     class Meta:
         model = UserProfile
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'resume', 'phone', 'address']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'resume', 'company', 'company_name', 'phone', 'address']
         read_only_fields = ['id', 'username', 'email', 'first_name', 'last_name']
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['role', 'resume', 'phone', 'address']
+        fields = ['role', 'resume', 'company', 'phone', 'address']

@@ -6,8 +6,9 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 
+from place_x.permissions import IsRecruiterOrStaff
 from .models import Company, Job, Application, Interview, StudentProfile, UserProfile
 from .serializers import (
     CompanySerializer, JobSerializer, JobDetailSerializer,
@@ -23,6 +24,11 @@ class CompanyViewSet(viewsets.ModelViewSet):
     filter_backends = [SearchFilter, OrderingFilter]
     search_fields = ['name', 'industry']
     ordering_fields = ['name', 'created_at']
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsRecruiterOrStaff()]
+        return [IsAuthenticated()]
 
 
 class JobViewSet(viewsets.ModelViewSet):
@@ -152,7 +158,7 @@ class StudentProfileViewSet(viewsets.ModelViewSet):
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
 
     def get_queryset(self):
         role = getattr(getattr(self.request.user, 'user_profile', None), 'role', '')
@@ -167,6 +173,21 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        """Admin dashboard stats (staff/admin only)"""
+        role = getattr(getattr(request.user, 'user_profile', None), 'role', '')
+        if not (request.user.is_staff or role == 'admin'):
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return Response({
+            'totalStudents': UserProfile.objects.filter(role='student').count(),
+            'totalRecruiters': UserProfile.objects.filter(role='recruiter').count(),
+            'totalAdmins': UserProfile.objects.filter(role='admin').count(),
+        })
 
     @action(detail=True, methods=['get'])
     def download_resume(self, request, pk=None):
