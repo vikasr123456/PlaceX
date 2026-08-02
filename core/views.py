@@ -1,3 +1,6 @@
+import os
+
+from django.http import HttpResponse
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -152,7 +155,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser]
 
     def get_queryset(self):
-        if self.request.user.is_staff:
+        role = getattr(getattr(self.request.user, 'user_profile', None), 'role', '')
+        if self.request.user.is_staff or role == 'recruiter':
             return UserProfile.objects.select_related('user').all()
         return UserProfile.objects.filter(user=self.request.user)
 
@@ -163,6 +167,35 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['get'])
+    def download_resume(self, request, pk=None):
+        """Download a user's resume from MongoDB Atlas (owner, recruiter, or staff)."""
+        profile = self.get_object()
+        if not profile.resume:
+            return Response(
+                {'error': 'No resume uploaded'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        role = getattr(getattr(request.user, 'user_profile', None), 'role', '')
+        allowed = (
+            request.user.id == profile.user_id
+            or request.user.is_staff
+            or role == 'recruiter'
+        )
+        if not allowed:
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        filename = os.path.basename(profile.resume.name)
+        with profile.resume.open('rb') as f:
+            content = f.read()
+        response = HttpResponse(content, content_type='application/octet-stream')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
 
     @action(detail=False, methods=['get', 'put', 'patch'])
     def me(self, request):

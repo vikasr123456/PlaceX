@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "cgraph": {
+      "command": "cgraph",
+      "args": [
+        "serve",
+        "--root",
+        "C:/Users/vikas/Desktop/Projects/PlaceX"
+      ]
+    }
+  }
+}

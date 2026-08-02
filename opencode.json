@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "cgraph": {
+      "type": "local",
+      "command": [
+        "cgraph",
+        "serve",
+        "--root",
+        "C:/Users/vikas/Desktop/Projects/PlaceX"
+      ],
+      "enabled": true
+    }
+  }
+}

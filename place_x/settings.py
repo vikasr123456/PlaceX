@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,7 +17,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-secret-key-for-placex-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', '1') == '1'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.33,*').split(',')
 
 
 # Application definition
@@ -82,30 +85,32 @@ WSGI_APPLICATION = 'place_x.wsgi.application'
 ASGI_APPLICATION = 'place_x.asgi.application'
 
 
+# MongoDB Atlas connection (also used by GridFSStorage for resume files)
+MONGO_URI = os.getenv('MONGO_URI', f"mongodb://{os.getenv('MONGO_HOST', 'localhost')}:{os.getenv('MONGO_PORT', '27017')}/")
+MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'sppms')
+
 # Database Configuration
-# Dual database setup: PostgreSQL as default, MongoDB for unstructured parsed resumes using Djongo.
+# Dual database setup: Supabase PostgreSQL as default (cloud), MongoDB for unstructured parsed resumes using Djongo.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('SUPABASE_DB_NAME', 'postgres'),
+        'USER': os.getenv('SUPABASE_DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('SUPABASE_DB_PASSWORD'),
+        'HOST': os.getenv('SUPABASE_DB_HOST'),
+        'PORT': os.getenv('SUPABASE_DB_PORT', '5432'),
     },
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': os.getenv('DB_NAME', 'placement_db'),
-    #     'USER': os.getenv('DB_USER', 'Shivu'),
-    #     'PASSWORD': os.getenv('DB_PASSWORD', 'Shivu@143'),
-    #     'HOST': os.getenv('DB_HOST', 'localhost'),
-    #     'PORT': os.getenv('DB_PORT', '5432'),
-    # },
     'mongodb': {
         'ENGINE': 'djongo',
-        'NAME': os.getenv('MONGO_DB_NAME', 'sppms'),
+        'NAME': MONGO_DB_NAME,
         'ENFORCE_SCHEMA': False,
         'CLIENT': {
-            'host': f"mongodb://{os.getenv('MONGO_HOST', 'localhost')}:{os.getenv('MONGO_PORT', '27017')}/",
+            'host': MONGO_URI,
         }
     }
 }
+
+DATABASE_ROUTERS = ['place_x.routers.DatabaseRouter']
 
 
 # Password validation
@@ -160,9 +165,28 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
-# CORS Configuration for React Frontend
-CORS_ALLOWED_ORIGINS = [
+# CORS & CSRF Configuration for React Frontend & Server IP
+default_allowed_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://192.168.1.33:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://192.168.1.33:8000",
+    "http://localhost",
+    "http://127.0.0.1",
+    "http://192.168.1.33",
 ]
+
+env_cors = os.getenv('CORS_ALLOWED_ORIGINS')
+if env_cors:
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in env_cors.split(',') if origin.strip()]
+else:
+    CORS_ALLOWED_ORIGINS = default_allowed_origins
+
+env_csrf = os.getenv('CSRF_TRUSTED_ORIGINS')
+if env_csrf:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in env_csrf.split(',') if origin.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = default_allowed_origins
 

@@ -63,17 +63,32 @@ pip install -r requirements.txt
 
 3. **Configure environment variables**
 ```bash
-export DB_HOST=localhost
-export DB_PORT=5432
-export DB_NAME=placement_db
-export DB_USER=postgres
-export DB_PASSWORD=your_password
-export MONGO_HOST=localhost
+# Supabase PostgreSQL
+export SUPABASE_DB_NAME=postgres
+export SUPABASE_DB_USER=postgres
+export SUPABASE_DB_PASSWORD=your-supabase-postgres-password
+export SUPABASE_DB_HOST=<your-supabase-project-ref>.supabase.co
+
+# MongoDB for resume storage
+export MONGO_HOST=mongodb
 export MONGO_PORT=27017
 export MONGO_DB_NAME=sppms
-export CELERY_BROKER_URL=redis://localhost:6379/0
-export CELERY_RESULT_BACKEND=redis://localhost:6379/0
-```
+
+# Redis
+export CELERY_BROKER_URL=redis://redis:6379/0
+export CELERY_RESULT_BACKEND=redis://redis:6379/0
+
+# Supabase Client (frontend)
+export NEXT_PUBLIC_SUPABASE_URL=https://cykxtspllmignvkpnnkb.supabase.co
+export NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_johkdksbsJ81w6JvAwVB_g_kg8z5eRl
+export NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_johkdksbsJ81w6JvAwVB_g_kg8z5eRl
+
+# JWT
+export SECRET_KEY=django-insecure-dev-secret-key-for-placex-portal
+export DEBUG=1
+export ALLOWED_HOSTS=localhost,127.0.0.1,192.168.1.33,*
+export CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://192.168.1.33:5173,http://localhost:8000,http://127.0.0.1:8000,http://192.168.1.33:8000,http://localhost,http://127.0.0.1,http://192.168.1.33
+export CSRF_TRUSTED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://192.168.1.33:5173,http://localhost:8000,http://127.0.0.1:8000,http://192.168.1.33:8000,http://localhost,http://127.0.0.1,http://192.168.1.33
 
 4. **Run migrations**
 ```bash
@@ -266,11 +281,11 @@ kubectl get svc nginx-service
 ##  Environment Variables
 
 ### Backend
-- `DB_HOST` - PostgreSQL host
-- `DB_PORT` - PostgreSQL port
-- `DB_NAME` - Database name
-- `DB_USER` - Database user
-- `DB_PASSWORD` - Database password
+- `SUPABASE_DB_HOST` - Supabase PostgreSQL host
+- `SUPABASE_DB_NAME` - Supabase PostgreSQL database name
+- `SUPABASE_DB_USER` - Supabase PostgreSQL user
+- `SUPABASE_DB_PASSWORD` - Supabase PostgreSQL password
+- `SUPABASE_DB_PORT` - Supabase PostgreSQL port
 - `MONGO_HOST` - MongoDB host
 - `MONGO_PORT` - MongoDB port
 - `MONGO_DB_NAME` - MongoDB database name
@@ -280,6 +295,9 @@ kubectl get svc nginx-service
 
 ### Frontend
 - `VITE_API_URL` - Backend API URL
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase URL for client-side auth
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` - Supabase publishable key for client-side auth
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 
 ##  Testing
 
