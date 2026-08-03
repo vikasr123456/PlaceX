@@ -1,6 +1,10 @@
 import os
 from pathlib import Path
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -14,7 +18,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-dev-secret-key-for-placex-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', '1') == '1'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 
 
 # Application definition
@@ -43,10 +47,10 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=int(os.getenv('SIMPLE_JWT_ACCESS_TOKEN_LIFETIME', '30'))),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=int(os.getenv('SIMPLE_JWT_REFRESH_TOKEN_LIFETIME', '7'))),
+    'ROTATE_REFRESH_TOKENS': os.getenv('SIMPLE_JWT_ROTATE_REFRESH_TOKENS', 'True') == 'True',
+    'BLACKLIST_AFTER_ROTATION': os.getenv('SIMPLE_JWT_BLACKLIST_AFTER_ROTATION', 'True') == 'True',
 }
 
 MIDDLEWARE = [
@@ -83,29 +87,22 @@ ASGI_APPLICATION = 'place_x.asgi.application'
 
 
 # Database Configuration
-# Dual database setup: PostgreSQL as default, MongoDB for unstructured parsed resumes using Djongo.
+# PostgreSQL as primary database (Supabase)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.postgresql',
-    #     'NAME': os.getenv('DB_NAME', 'placement_db'),
-    #     'USER': os.getenv('DB_USER', 'Shivu'),
-    #     'PASSWORD': os.getenv('DB_PASSWORD', 'Shivu@143'),
-    #     'HOST': os.getenv('DB_HOST', 'localhost'),
-    #     'PORT': os.getenv('DB_PORT', '5432'),
-    # },
-    'mongodb': {
-        'ENGINE': 'djongo',
-        'NAME': os.getenv('MONGO_DB_NAME', 'sppms'),
-        'ENFORCE_SCHEMA': False,
-        'CLIENT': {
-            'host': f"mongodb://{os.getenv('MONGO_HOST', 'localhost')}:{os.getenv('MONGO_PORT', '27017')}/",
-        }
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME', 'postgres'),
+        'USER': os.getenv('DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
     }
 }
+
+# MongoDB Atlas Configuration (for resume storage - requires pymongo, not djongo)
+# Note: djongo is incompatible with Django 4.2. Use pymongo directly for MongoDB operations.
+MONGO_URI = os.getenv('MONGO_URI', '')
+MONGO_DB_NAME = os.getenv('MONGO_DB_NAME', 'sppms')
 
 
 # Password validation
@@ -161,8 +158,8 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 
 # CORS Configuration for React Frontend
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
+
+# CSRF Trusted Origins
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
 

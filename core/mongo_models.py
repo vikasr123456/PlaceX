@@ -1,78 +1,119 @@
-from djongo import models
+from pymongo import MongoClient
+from django.conf import settings
 
 
-class ResumeDocument(models.Model):
-    """MongoDB model for storing parsed resume data"""
-    
-    # Basic Information
-    user_id = models.IntegerField()
-    user_email = models.EmailField()
-    file_name = models.CharField(max_length=255)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    
-    # Parsed Content
-    raw_text = models.TextField()
-    skills = models.JSONField(default=list)  # List of skills extracted
-    experience = models.JSONField(default=list)  # List of experience entries
-    education = models.JSONField(default=list)  # List of education entries
-    
-    # Analysis Results
-    summary = models.TextField(blank=True)
-    keywords = models.JSONField(default=list)  # Important keywords
-    match_score = models.FloatField(default=0.0)  # Job match score
-    
-    # Metadata
-    file_size = models.IntegerField()
-    file_type = models.CharField(max_length=50)  # pdf, docx, etc.
-    parsing_status = models.CharField(
-        max_length=20,
-        choices=[
-            ('pending', 'Pending'),
-            ('processing', 'Processing'),
-            ('completed', 'Completed'),
-            ('failed', 'Failed'),
-        ],
-        default='pending'
-    )
-    error_message = models.TextField(blank=True)
-    
-    # Celery Task Tracking
-    celery_task_id = models.CharField(max_length=255, blank=True)
-    
-    class Meta:
-        managed = False  # Djongo will manage this in MongoDB
-        db_table = 'resume_documents'
-    
-    def __str__(self):
-        return f"{self.file_name} - {self.user_email}"
+class MongoDBClient:
+    """Singleton MongoDB client for Atlas connection"""
+    _instance = None
+    _client = None
+    _db = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = MongoClient(settings.MONGO_URI)
+        return self._client
+
+    @property
+    def db(self):
+        if self._db is None:
+            self._db = self.client[settings.MONGO_DB_NAME]
+        return self._db
 
 
-class JobMatch(models.Model):
-    """MongoDB model for storing job-resume match results"""
+def get_mongo_collection(collection_name):
+    """Get a MongoDB collection"""
+    mongo = MongoDBClient()
+    return mongo.db[collection_name]
+
+
+class ResumeDocument:
+    """MongoDB document model for storing parsed resume data"""
     
-    resume_id = models.ObjectIdField()
-    job_id = models.IntegerField()
-    user_id = models.IntegerField()
+    @staticmethod
+    def collection():
+        return get_mongo_collection('resume_documents')
     
-    # Match Details
-    match_score = models.FloatField()
-    matched_skills = models.JSONField(default=list)
-    missing_skills = models.JSONField(default=list)
+    @staticmethod
+    def create(data):
+        """Create a new resume document"""
+        doc = {
+            'user_id': data.get('user_id'),
+            'user_email': data.get('user_email'),
+            'file_name': data.get('file_name'),
+            'uploaded_at': data.get('uploaded_at'),
+            'raw_text': data.get('raw_text', ''),
+            'skills': data.get('skills', []),
+            'experience': data.get('experience', []),
+            'education': data.get('education', []),
+            'summary': data.get('summary', ''),
+            'keywords': data.get('keywords', []),
+            'match_score': data.get('match_score', 0.0),
+            'file_size': data.get('file_size', 0),
+            'file_type': data.get('file_type', 'unknown'),
+            'parsing_status': data.get('parsing_status', 'pending'),
+            'error_message': data.get('error_message', ''),
+            'celery_task_id': data.get('celery_task_id', ''),
+        }
+        result = ResumeDocument.collection().insert_one(doc)
+        doc['_id'] = result.inserted_id
+        return doc
     
-    # Analysis
-    similarity_score = models.FloatField(default=0.0)
-    relevance_score = models.FloatField(default=0.0)
+    @staticmethod
+    def get_by_user(user_id):
+        """Get all resumes for a user"""
+        return list(ResumeDocument.collection().find({'user_id': user_id}))
     
-    # Timestamps
-    calculated_at = models.DateTimeField(auto_now_add=True)
+    @staticmethod
+    def get_by_id(resume_id):
+        """Get a resume by ID"""
+        return ResumeDocument.collection().find_one({'_id': resume_id})
     
-    class Meta:
-        managed = False
-        db_table = 'job_matches'
-        indexes = [
-            models.Index(fields=['user_id', 'job_id']),
-            models.Index(fields=['match_score']),
-        ]
+    @staticmethod
+    def update(resume_id, data):
+        """Update a resume document"""
+        return ResumeDocument.collection().update_one(
+            {'_id': resume_id},
+            {'$set': data}
+        )
+
+
+class JobMatch:
+    """MongoDB document model for storing job-resume match results"""
     
-    def __str__(self):
-        return f"Match: User {self.user_id} - Job {self.job_id} ({self.match_score}%)"
+    @staticmethod
+    def collection():
+        return get_mongo_collection('job_matches')
+    
+    @staticmethod
+    def create(data):
+        """Create a new job match"""
+        doc = {
+            'resume_id': data.get('resume_id'),
+            'job_id': data.get('job_id'),
+            'user_id': data.get('user_id'),
+            'match_score': data.get('match_score', 0.0),
+            'matched_skills': data.get('matched_skills', []),
+            'missing_skills': data.get('missing_skills', []),
+            'similarity_score': data.get('similarity_score', 0.0),
+            'relevance_score': data.get('relevance_score', 0.0),
+            'calculated_at': data.get('calculated_at'),
+        }
+        result = JobMatch.collection().insert_one(doc)
+        doc['_id'] = result.inserted_id
+        return doc
+    
+    @staticmethod
+    def get_by_user(user_id):
+        """Get all job matches for a user"""
+        return list(JobMatch.collection().find({'user_id': user_id}).sort('match_score', -1))
+    
+    @staticmethod
+    def get_by_resume_and_job(resume_id, job_id):
+        """Get a match by resume and job ID"""
+        return JobMatch.collection().find_one({'resume_id': resume_id, 'job_id': job_id})

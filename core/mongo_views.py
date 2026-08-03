@@ -3,63 +3,118 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
+from datetime import datetime
 
 from .mongo_models import ResumeDocument, JobMatch
-from .mongo_serializers import ResumeDocumentSerializer, JobMatchSerializer
 
 
-class ResumeDocumentViewSet(viewsets.ModelViewSet):
-    """ViewSet for MongoDB resume documents"""
-    serializer_class = ResumeDocumentSerializer
+class ResumeDocumentViewSet(viewsets.ViewSet):
+    """ViewSet for MongoDB resume documents using pymongo"""
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    def get_queryset(self):
-        return ResumeDocument.objects.filter(user_id=self.request.user.id)
+    def list(self, request):
+        """Get all resumes for current user"""
+        resumes = ResumeDocument.get_by_user(request.user.id)
+        # Convert ObjectId to string for JSON serialization
+        for resume in resumes:
+            resume['_id'] = str(resume['_id'])
+        return Response({'success': True, 'resumes': resumes})
 
-    def perform_create(self, serializer):
-        # Add user context
-        serializer.save(
-            user_id=self.request.user.id,
-            user_email=self.request.user.email,
-            file_size=self.request.FILES.get('file').size if self.request.FILES.get('file') else 0,
-            file_type=self.request.FILES.get('file').name.split('.')[-1] if self.request.FILES.get('file') else 'unknown'
-        )
+    def create(self, request):
+        """Upload a new resume"""
+        file = request.FILES.get('file')
+        if not file:
+            return Response(
+                {'success': False, 'error': 'No file provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        data = {
+            'user_id': request.user.id,
+            'user_email': request.user.email,
+            'file_name': file.name,
+            'file_size': file.size,
+            'file_type': file.name.split('.')[-1] if '.' in file.name else 'unknown',
+            'uploaded_at': datetime.utcnow(),
+            'parsing_status': 'pending',
+        }
+        
+        try:
+            doc = ResumeDocument.create(data)
+            doc['_id'] = str(doc['_id'])
+            return Response({'success': True, 'resume': doc}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {'success': False, 'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def retrieve(self, request, pk=None):
+        """Get a specific resume"""
+        try:
+            from bson import ObjectId
+            resume = ResumeDocument.get_by_id(ObjectId(pk))
+            if resume:
+                resume['_id'] = str(resume['_id'])
+                return Response({'success': True, 'resume': resume})
+            return Response(
+                {'success': False, 'error': 'Resume not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'success': False, 'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(detail=False, methods=['get'])
     def my_resumes(self, request):
         """Get all resumes for current user"""
-        resumes = self.get_queryset()
-        serializer = self.get_serializer(resumes, many=True)
-        return Response(serializer.data)
+        return self.list(request)
 
     @action(detail=True, methods=['get'])
     def parsing_status(self, request, pk=None):
         """Check parsing status of a resume"""
-        resume = self.get_object()
-        return Response({
-            'id': str(resume.id),
-            'file_name': resume.file_name,
-            'parsing_status': resume.parsing_status,
-            'error_message': resume.error_message,
-            'match_score': resume.match_score,
-        })
+        try:
+            from bson import ObjectId
+            resume = ResumeDocument.get_by_id(ObjectId(pk))
+            if resume:
+                return Response({
+                    'success': True,
+                    'id': str(resume['_id']),
+                    'file_name': resume.get('file_name'),
+                    'parsing_status': resume.get('parsing_status'),
+                    'error_message': resume.get('error_message'),
+                    'match_score': resume.get('match_score'),
+                })
+            return Response(
+                {'success': False, 'error': 'Resume not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'success': False, 'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
-class JobMatchViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for MongoDB job matches"""
-    serializer_class = JobMatchSerializer
+class JobMatchViewSet(viewsets.ViewSet):
+    """ViewSet for MongoDB job matches using pymongo"""
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return JobMatch.objects.filter(user_id=self.request.user.id)
+    def list(self, request):
+        """Get all job matches for current user"""
+        matches = JobMatch.get_by_user(request.user.id)
+        # Convert ObjectId to string for JSON serialization
+        for match in matches:
+            match['_id'] = str(match['_id'])
+        return Response({'success': True, 'matches': matches})
 
     @action(detail=False, methods=['get'])
     def my_matches(self, request):
         """Get all job matches for current user"""
-        matches = self.get_queryset().order_by('-match_score')
-        serializer = self.get_serializer(matches, many=True)
-        return Response(serializer.data)
+        return self.list(request)
 
     @action(detail=False, methods=['post'])
     def calculate_match(self, request):
@@ -69,13 +124,14 @@ class JobMatchViewSet(viewsets.ReadOnlyModelViewSet):
         
         if not resume_id or not job_id:
             return Response(
-                {'error': 'Both resume_id and job_id are required'},
+                {'success': False, 'error': 'Both resume_id and job_id are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         # This would trigger a Celery task to calculate the match
         # For now, return a placeholder response
         return Response({
+            'success': True,
             'message': 'Match calculation initiated',
             'resume_id': resume_id,
             'job_id': job_id,

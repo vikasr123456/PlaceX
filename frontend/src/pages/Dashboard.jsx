@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import StudentDashboard from '../components/StudentDashboard';
 import RecruiterDashboard from '../components/RecruiterDashboard';
 import AdminDashboard from '../components/AdminDashboard';
@@ -7,6 +8,7 @@ import api from '../api/axios';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { isDark } = useTheme();
   const [stats, setStats] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -17,46 +19,8 @@ const Dashboard = () => {
   const fetchDashboardStats = async () => {
     setLoading(true);
     try {
-      const role = user?.role || 'student';
-      
-      if (role === 'student') {
-        const [jobsRes, applicationsRes] = await Promise.all([
-          api.get('/jobs/'),
-          api.get('/applications/'),
-        ]);
-
-        setStats({
-          jobsApplied: applicationsRes.data.count || 0,
-          interviews: applicationsRes.data.results?.filter(app => app.status === 'interview_scheduled').length || 0,
-          pending: applicationsRes.data.results?.filter(app => app.status === 'pending').length || 0,
-          profileScore: 85,
-        });
-      } else if (role === 'recruiter') {
-        const [jobsRes, applicationsRes] = await Promise.all([
-          api.get('/jobs/'),
-          api.get('/applications/'),
-        ]);
-
-        setStats({
-          activeJobs: jobsRes.data.results?.filter(job => job.is_active).length || 0,
-          totalApplications: applicationsRes.data.count || 0,
-          interviews: applicationsRes.data.results?.filter(app => app.status === 'interview_scheduled').length || 0,
-          hired: applicationsRes.data.results?.filter(app => app.status === 'accepted').length || 0,
-        });
-      } else if (role === 'admin') {
-        const [usersRes, companiesRes, jobsRes] = await Promise.all([
-          api.get('/auth/profile/'),
-          api.get('/companies/'),
-          api.get('/jobs/'),
-        ]);
-
-        setStats({
-          totalUsers: 150,
-          companies: companiesRes.data.count || 0,
-          jobPostings: jobsRes.data.count || 0,
-          activeSessions: 45,
-        });
-      }
+      const response = await api.get('/dashboard/stats/');
+      setStats(response.data);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
     } finally {
@@ -67,7 +31,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+        <div className={`animate-spin rounded-full h-12 w-12 border-b-2 ${isDark ? 'border-blue-500' : 'border-blue-600'}`}></div>
       </div>
     );
   }
@@ -76,7 +40,9 @@ const Dashboard = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">Welcome back, {user?.first_name || user?.username}!</h1>
+      <h1 className={`text-3xl font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        Welcome back, {user?.first_name || user?.username}!
+      </h1>
       {role === 'student' && <StudentDashboard stats={stats} />}
       {role === 'recruiter' && <RecruiterDashboard stats={stats} />}
       {role === 'admin' && <AdminDashboard stats={stats} />}

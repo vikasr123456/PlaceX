@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Company, Job, Application, Interview, StudentProfile, UserProfile
+from core.models import Company, Job, Application, Interview, StudentProfile, UserProfile
+from core.models import CollegeInfo, Department, PlacementDrive, Offer
 
 
 class CompanySerializer(serializers.ModelSerializer):
@@ -11,12 +12,21 @@ class CompanySerializer(serializers.ModelSerializer):
 
 class JobSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.name', read_only=True)
-    company = serializers.IntegerField(write_only=True)
+    company = serializers.PrimaryKeyRelatedField(queryset=Company.objects.all(), write_only=True, required=False)
 
     class Meta:
         model = Job
         fields = '__all__'
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        if request and request.user:
+            user_profile = getattr(request.user, 'user_profile', None)
+            if user_profile and user_profile.role == 'admin':
+                if 'company' not in attrs:
+                    raise serializers.ValidationError({'company': 'This field is required for admins.'})
+        return attrs
 
 
 class JobDetailSerializer(serializers.ModelSerializer):
@@ -82,3 +92,35 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['role', 'resume', 'phone', 'address']
+
+
+class CollegeInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CollegeInfo
+        fields = '__all__'
+
+
+class DepartmentSerializer(serializers.ModelSerializer):
+    college_name = serializers.CharField(source='college.name', read_only=True)
+
+    class Meta:
+        model = Department
+        fields = '__all__'
+
+
+class PlacementDriveSerializer(serializers.ModelSerializer):
+    company_name = serializers.CharField(source='company.name', read_only=True)
+
+    class Meta:
+        model = PlacementDrive
+        fields = '__all__'
+
+
+class OfferSerializer(serializers.ModelSerializer):
+    job_title = serializers.CharField(source='job.title', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    student_name = serializers.CharField(source='student.username', read_only=True)
+
+    class Meta:
+        model = Offer
+        fields = '__all__'
