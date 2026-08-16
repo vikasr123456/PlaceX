@@ -16,56 +16,56 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route index element={<Home />} />
-      <Route path="login" element={<Login />} />
-      <Route path="register" element={<Register />} />
-      <Route 
-        path="dashboard" 
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="jobs" 
-        element={
-          <ProtectedRoute>
-            <Jobs />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="applications" 
-        element={
-          <ProtectedRoute>
-            <Applications />
-          </ProtectedRoute>
-        } 
-      />
-      {!isAdmin && (
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Home />} />
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
         <Route 
-          path="profile" 
+          path="dashboard" 
           element={
             <ProtectedRoute>
-              <Profile />
+              <Dashboard />
             </ProtectedRoute>
           } 
         />
-      )}
+        <Route 
+          path="jobs" 
+          element={
+            <ProtectedRoute>
+              <Jobs />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="applications" 
+          element={
+            <ProtectedRoute>
+              <Applications />
+            </ProtectedRoute>
+          } 
+        />
+        {!isAdmin && (
+          <Route 
+            path="profile" 
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
+        )}
+      </Route>
     </Routes>
   );
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Layout>
-          <AppRoutes />
-        </Layout>
-      </Router>
-    </AuthProvider>
+    <Router>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </Router>
   );
 }
 

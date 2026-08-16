@@ -87,8 +87,10 @@ ASGI_APPLICATION = 'place_x.asgi.application'
 
 
 # Database Configuration
-# Use SQLite for local development, PostgreSQL for production
+# Use SQLite for local development (DEBUG=True), PostgreSQL for Docker/production
+# Force SQLite when DEBUG=True regardless of .env DB_HOST
 if DEBUG:
+    # Local development - use SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -96,17 +98,32 @@ if DEBUG:
         }
     }
 else:
-    # PostgreSQL as primary database (Supabase) for production
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('DB_NAME', 'postgres'),
-            'USER': os.getenv('DB_USER', 'postgres'),
-            'PASSWORD': os.getenv('DB_PASSWORD', ''),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', '5432'),
+    # Docker/Production - use PostgreSQL
+    DB_HOST = os.getenv('DB_HOST')
+    if DB_HOST:
+        # Docker environment - use PostgreSQL
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.getenv('DB_NAME', 'placex_db'),
+                'USER': os.getenv('DB_USER', 'placex_user'),
+                'PASSWORD': os.getenv('DB_PASSWORD', 'placex_password'),
+                'HOST': DB_HOST,
+                'PORT': os.getenv('DB_PORT', '5432'),
+            }
         }
-    }
+    else:
+        # Production - use PostgreSQL (Supabase)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.getenv('DB_NAME', 'postgres'),
+                'USER': os.getenv('DB_USER', 'postgres'),
+                'PASSWORD': os.getenv('DB_PASSWORD', ''),
+                'HOST': os.getenv('DB_HOST', 'localhost'),
+                'PORT': os.getenv('DB_PORT', '5432'),
+            }
+        }
 
 # MongoDB Atlas Configuration (for resume storage - requires pymongo, not djongo)
 # Note: djongo is incompatible with Django 4.2. Use pymongo directly for MongoDB operations.

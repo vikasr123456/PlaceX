@@ -1,32 +1,18 @@
-# Multi-stage build for production
-FROM node:20-alpine as builder
+# Use official Node runtime as a parent image
+FROM node:18-alpine
 
 # Set work directory
 WORKDIR /usr/src/app
 
-# Copy package files
-COPY package.json package-lock.json ./
-
-# Install dependencies
-RUN npm ci
+# Copy package list and install dependencies
+COPY package.json ./
+RUN npm install --legacy-peer-deps
 
 # Copy application files
 COPY . .
 
-# Build the application
-RUN npm run build
-
-# Production stage
-FROM nginx:alpine
-
-# Copy built assets from builder
-COPY --from=builder /usr/src/app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 # Expose port
-EXPOSE 80
+EXPOSE 5173
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start development server
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

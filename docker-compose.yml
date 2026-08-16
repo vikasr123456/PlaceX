@@ -1,6 +1,23 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: placex_db
+    environment:
+      POSTGRES_DB: placex_db
+      POSTGRES_USER: placex_user
+      POSTGRES_PASSWORD: placex_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U placex_user -d placex_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   web:
     build: .
     container_name: placex_web
@@ -11,6 +28,15 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: placex_db
+      DB_USER: placex_user
+      DB_PASSWORD: placex_password
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -20,6 +46,8 @@ services:
     volumes:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
+    environment:
+      VITE_BACKEND_URL: http://web:8000
     depends_on:
       - web
 
@@ -33,3 +61,6 @@ services:
     depends_on:
       - web
       - frontend
+
+volumes:
+  postgres_data:
