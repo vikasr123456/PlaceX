@@ -628,12 +628,12 @@ class CollegeInfoViewSet(viewsets.ModelViewSet):
     serializer_class = CollegeInfoSerializer
 
     def get_authenticators(self):
-        if self.action in ['list', 'retrieve']:
+        if hasattr(self, 'action') and self.action in ['list', 'retrieve']:
             return []
         return super().get_authenticators()
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if hasattr(self, 'action') and self.action in ['list', 'retrieve']:
             return []
         return [IsAuthenticated(), IsRecruiterOrAdmin()]
 
