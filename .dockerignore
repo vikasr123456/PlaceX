@@ -1,5 +1,7 @@
 .git
 .gitignore
+.env
+.env.prod.example
 .venv
 venv
 ENV

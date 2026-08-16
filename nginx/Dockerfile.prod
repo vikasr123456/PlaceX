@@ -1,0 +1,30 @@
+# Multi-stage production build for the PlaceX frontend + reverse proxy.
+# Builds the React app, then serves the static output with nginx, which also
+# proxies /api, /admin, /static and /media to the Django (web) container.
+
+# --- Stage 1: Build the React frontend ---
+FROM node:18-alpine AS client-build
+WORKDIR /client
+
+# Keep the Vite build within the 1 GB RAM of a free-tier t3.micro
+ENV NODE_OPTIONS=--max-old-space-size=768
+
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm install --legacy-peer-deps
+
+COPY frontend/ ./
+
+# Same-origin API calls: the SPA talks to /api which nginx proxies to Django.
+# Override only if the client reads import.meta.env.VITE_API_URL.
+ARG VITE_API_URL=""
+ENV VITE_API_URL=$VITE_API_URL
+
+RUN npm run build
+
+# --- Stage 2: Serve the static build with nginx ---
+FROM nginx:alpine
+
+COPY nginx/nginx.prod.conf /etc/nginx/conf.d/default.conf
+COPY --from=client-build /client/dist /usr/share/nginx/html
+
+EXPOSE 80

@@ -1,0 +1,100 @@
+name: placex-prod
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: placex_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-placex_db}
+      POSTGRES_USER: ${POSTGRES_USER:-placex_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-placex_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U placex_user -d placex_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: placex_redis
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    deploy:
+      resources:
+        limits:
+          memory: 80M
+
+  mongodb:
+    image: mongo:6.0
+    container_name: placex_mongodb
+    restart: always
+    command: mongod --wiredTigerCacheSizeGB 0.25
+    volumes:
+      - mongo_data:/data/db
+    deploy:
+      resources:
+        limits:
+          memory: 450M
+
+  web:
+    build: .
+    container_name: placex_web
+    restart: always
+    command: /bin/sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && exec gunicorn place_x.wsgi:application --workers 1 --threads 4 --bind 0.0.0.0:8000"
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      MONGO_URI: mongodb://mongodb:27017
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+    volumes:
+      - staticfiles:/app/staticfiles
+      - media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      mongodb:
+        condition: service_started
+      redis:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 350M
+
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile.prod
+      args:
+        VITE_API_URL: ""
+    container_name: placex_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - staticfiles:/app/staticfiles:ro
+      - media:/app/media:ro
+    depends_on:
+      - web
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+
+volumes:
+  postgres_data:
+  mongo_data:
+  redis_data:
+  staticfiles:
+  media:
