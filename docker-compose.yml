@@ -1,19 +1,16 @@
 version: '3.8'
 
 services:
-  mongodb:
-    image: mongo:6.0
-    container_name: placex_mongodb
-    ports:
-      - "27017:27017"
+  web:
+    build: .
+    container_name: placex_web
+    command: /start
     volumes:
-      - mongodb_data:/data/db
-
-  redis:
-    image: redis:7-alpine
-    container_name: placex_redis
+      - .:/app
     ports:
-      - "6379:6379"
+      - "8000:8000"
+    env_file:
+      - .env
 
   frontend:
     build: ./frontend
@@ -26,36 +23,6 @@ services:
     depends_on:
       - web
 
-  web:
-    build: .
-    container_name: placex_web
-    command: /start
-    volumes:
-      - .:/app
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    depends_on:
-      mongodb:
-        condition: service_started
-      redis:
-        condition: service_started
-
-  celery_worker:
-    build: .
-    container_name: placex_celery_worker
-    command: celery -A place_x worker -l info
-    volumes:
-      - .:/app
-    env_file:
-      - .env
-    depends_on:
-      mongodb:
-        condition: service_started
-      redis:
-        condition: service_started
-
   nginx:
     image: nginx:alpine
     container_name: placex_nginx
@@ -66,6 +33,3 @@ services:
     depends_on:
       - web
       - frontend
-
-volumes:
-  mongodb_data:
