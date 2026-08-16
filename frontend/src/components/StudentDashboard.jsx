@@ -17,8 +17,11 @@ const formatDistanceToNow = (dateString) => {
   return `${diffInMonths} month${diffInMonths > 1 ? 's' : ''} ago`;
 };
 
+import { useNavigate } from 'react-router-dom';
+
 const StudentDashboard = ({ stats }) => {
   const { isDark } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-8">
@@ -98,21 +101,21 @@ const StudentDashboard = ({ stats }) => {
       <div className={`rounded-2xl p-6 ${isDark ? 'bg-slate-800/50 border border-slate-700' : 'bg-white border border-gray-200 shadow-lg'}`}>
         <h3 className={`text-xl font-semibold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="group flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-xl p-5 transition-all shadow-lg">
+          <button onClick={() => navigate('/jobs')} className="group flex items-center justify-between bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-xl p-5 transition-all shadow-lg">
             <div className="flex items-center space-x-3">
               <Briefcase className="h-6 w-6" />
               <span className="font-medium text-white">Browse Jobs</span>
             </div>
             <ArrowRight className="h-5 w-5 text-white group-hover:translate-x-1 transition-transform" />
           </button>
-          <button className={`group flex items-center justify-between rounded-xl p-5 transition-all border ${isDark ? 'bg-slate-700/50 hover:bg-slate-700 border-slate-600' : 'bg-gray-100 hover:bg-gray-200 border-gray-300'}`}>
+          <button onClick={() => navigate('/profile')} className={`group flex items-center justify-between rounded-xl p-5 transition-all border ${isDark ? 'bg-slate-700/50 hover:bg-slate-700 border-slate-600' : 'bg-gray-100 hover:bg-gray-200 border-gray-300'}`}>
             <div className="flex items-center space-x-3">
               <FileText className={`h-6 w-6 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
               <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Upload Resume</span>
             </div>
             <ArrowRight className={`h-5 w-5 ${isDark ? 'text-slate-400' : 'text-gray-600'} group-hover:translate-x-1 transition-transform`} />
           </button>
-          <button className={`group flex items-center justify-between rounded-xl p-5 transition-all border ${isDark ? 'bg-slate-700/50 hover:bg-slate-700 border-slate-600' : 'bg-gray-100 hover:bg-gray-200 border-gray-300'}`}>
+          <button onClick={() => navigate('/applications')} className={`group flex items-center justify-between rounded-xl p-5 transition-all border ${isDark ? 'bg-slate-700/50 hover:bg-slate-700 border-slate-600' : 'bg-gray-100 hover:bg-gray-200 border-gray-300'}`}>
             <div className="flex items-center space-x-3">
               <Users className={`h-6 w-6 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
               <span className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>My Applications</span>
