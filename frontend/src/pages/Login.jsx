@@ -35,9 +35,19 @@ const Login = () => {
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);
-      console.error('Error response:', err.response?.data);
-      console.error('Error message:', err.response?.data?.detail || err.message);
-      setError(err.response?.data?.detail || err.message || 'Login failed. Please try again.');
+      let errorMsg = 'Login failed. Please try again.';
+      if (err.response?.data) {
+        if (err.response.data.non_field_errors) {
+          errorMsg = err.response.data.non_field_errors.join(', ');
+        } else if (err.response.data.detail) {
+          errorMsg = err.response.data.detail;
+        } else if (typeof err.response.data === 'object') {
+          errorMsg = Object.values(err.response.data).flat().join(', ');
+        }
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
