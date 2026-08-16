@@ -37,9 +37,13 @@ const Layout = () => {
     navLinks.push(
       { path: '/dashboard', label: 'Dashboard', icon: Briefcase },
       { path: '/jobs', label: 'Jobs', icon: Building2 },
-      { path: '/applications', label: 'Applications', icon: FileText },
-      { path: '/profile', label: 'Profile', icon: User }
+      { path: '/applications', label: 'Applications', icon: FileText }
     );
+    
+    // Only show profile link for non-admin users
+    if (user?.role !== 'admin') {
+      navLinks.push({ path: '/profile', label: 'Profile', icon: User });
+    }
   }
 
   return (

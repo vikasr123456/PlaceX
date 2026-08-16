@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 
 const AuthContext = createContext(null);
@@ -7,10 +8,19 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     checkAuth();
   }, []);
+
+  // Store current route on navigation
+  useEffect(() => {
+    if (isAuthenticated && location.pathname !== '/login' && location.pathname !== '/register') {
+      localStorage.setItem('last_route', location.pathname);
+    }
+  }, [location.pathname, isAuthenticated]);
 
   const checkAuth = async () => {
     const token = localStorage.getItem('access_token');
@@ -26,6 +36,12 @@ export const AuthProvider = ({ children }) => {
           setUser(prev => ({ ...prev, role: profileResponse.data.role, resume: profileResponse.data.resume }));
         } catch (profileError) {
           console.error('Profile fetch error:', profileError);
+        }
+
+        // Redirect to last route if not already there
+        const lastRoute = localStorage.getItem('last_route');
+        if (lastRoute && location.pathname !== lastRoute && location.pathname === '/') {
+          navigate(lastRoute, { replace: true });
         }
       } catch (error) {
         logout();
@@ -85,13 +101,6 @@ export const AuthProvider = ({ children }) => {
       
       setUser(user);
       setIsAuthenticated(true);
-      
-      // Create user profile with default role
-      try {
-        await api.post('/user-profiles/', { role: 'student' });
-      } catch (profileError) {
-        console.error('Profile creation error:', profileError);
-      }
       
       return response.data;
     } catch (error) {

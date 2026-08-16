@@ -52,6 +52,9 @@ class RegisterView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         user = serializer.save()
+        # Create user profile with default role
+        from core.models import UserProfile
+        UserProfile.objects.get_or_create(user=user, defaults={'role': 'student'})
         return Response(
             {'success': True, **_auth_tokens(user)},
             status=status.HTTP_201_CREATED,
