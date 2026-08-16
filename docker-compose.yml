@@ -62,5 +62,17 @@ services:
       - web
       - frontend
 
+  redis:
+    image: redis:7.0-alpine
+    container_name: placex_redis
+    ports:
+      - "6379:6379"
+
+  mongodb:
+    image: mongo:6.0
+    container_name: placex_mongodb
+    ports:
+      - "27017:27017"
+
 volumes:
   postgres_data:

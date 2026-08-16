@@ -6,3 +6,5 @@ redis>=5.0
 djangorestframework
 djangorestframework-simplejwt
 django-cors-headers
+python-dotenv
+pymongo
