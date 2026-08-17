@@ -1,0 +1,22 @@
+name: Deploy PlaceX to EC2
+
+on:
+  push:
+    branches: [ "Shivu" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute deployment on EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.AWS_HOST }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            cd /opt/placex
+            git pull origin Shivu
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker image prune -f
